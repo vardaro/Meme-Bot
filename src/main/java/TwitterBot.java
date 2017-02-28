@@ -1,9 +1,9 @@
 /**
  * Created by Anthony on 2/17/2017
  *
- * Hello, this is a program I wrote using JRAW and Twitter4j that mirrors Hot posts from my favorite subreddits and tweets them on @freshpepperonis
+ * Hello, this is a program I wrote using JRAW and Twitter4j that mirrors Hot posts from my favorite subreddits and tweets them on its
+ * bot account @freshpepperonis
  */
-
 import net.dean.jraw.http.UserAgent;
 import net.dean.jraw.http.oauth.Credentials;
 import net.dean.jraw.http.oauth.OAuthData;
