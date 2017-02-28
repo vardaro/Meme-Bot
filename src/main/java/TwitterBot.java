@@ -55,6 +55,7 @@ public class TwitterBot {
           Thread.sleep(120000);
         }
       }
+      // Sleep for 12 hours
       Thread.sleep(1000 * 60 * 60 * 12);
     }
   }
@@ -68,9 +69,9 @@ public class TwitterBot {
 
   private static RedditClient connectReddit() throws OAuthException {
     System.out.println("[bot] Connecting to Reddit...");
-    UserAgent myUserAgent = UserAgent.of("desktop", "bot", "v0.1", "TheItalipino");
+    UserAgent myUserAgent = UserAgent.of("desktop", "bot", "v0.1", "RedditUserName");
     RedditClient redditClient = new RedditClient(myUserAgent);
-    Credentials credentials = Credentials.script("TheItalipino", "Reba321!", "skSYmiLn2tfQ5A", "Fe8DtvU-A4p-N3SFMX3WouMjdkY");
+    Credentials credentials = Credentials.script("RedditUserName", "RedditPassword", "RedditKey", "RedditSecretKey");
     OAuthData authData = redditClient.getOAuthHelper().easyAuth(credentials);
     redditClient.authenticate(authData);
     System.out.println("[bot] ...Successfully connected to Reddit");
