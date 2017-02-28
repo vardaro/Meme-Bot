@@ -34,11 +34,15 @@ public class TwitterBot {
       for (String aSUBREDDITS_TO_MONITOR : SUBREDDITS_TO_MONITOR) {
         Twitter twitter = connectTwitter();
         RedditClient redditClient = connectReddit();
+
+        // Get Listing of Hot posts from Subreddit
         SubredditPaginator sp = new SubredditPaginator(redditClient, aSUBREDDITS_TO_MONITOR);
         sp.setLimit(LIMIT_OF_SUBMISSIONS);
         sp.setSorting(Sorting.HOT);
         sp.next(true);
         Listing<Submission> list = sp.getCurrentListing();
+
+        // Check each post and determine if it can be tweeted
         for (int i = 0; i < LIMIT_OF_SUBMISSIONS; i++) {
           System.out.println("[bot] Finding a post...");
           if (postHasNotBeenPosted(list.get(i))) {
