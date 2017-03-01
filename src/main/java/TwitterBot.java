@@ -4,11 +4,12 @@
  * Hello, this is a program I wrote using JRAW and Twitter4j that mirrors Hot posts from my favorite subreddits and tweets them on its
  * bot account @freshpepperonis
  */
+
+import net.dean.jraw.RedditClient;
 import net.dean.jraw.http.UserAgent;
 import net.dean.jraw.http.oauth.Credentials;
 import net.dean.jraw.http.oauth.OAuthData;
 import net.dean.jraw.http.oauth.OAuthException;
-import net.dean.jraw.*;
 import net.dean.jraw.models.Listing;
 import net.dean.jraw.models.Submission;
 import net.dean.jraw.paginators.Sorting;
@@ -24,16 +25,36 @@ import java.net.URL;
 import java.util.Scanner;
 
 public class TwitterBot {
-  private static final String[] SUBREDDITS_TO_MONITOR = {"me_irl", "WholesomeMemes"};
-  private static final int LIMIT_OF_SUBMISSIONS = 25;
-  private static final String IMG_DIRECTORY = "\\TwitterBot\\src\\img";
-  private static final String GRAVEYARD = "\\TwitterBot\\src\\graveyard.txt";
-  public static void main(String[] args) throws TwitterException, OAuthException, InterruptedException {
+
+  // List subreddits you want to check
+  private static final String[] SUBREDDITS_TO_MONITOR = {"WholesomeMemes", "me_irl"};
+
+  // How many posts to search for
+  private static final int LIMIT_OF_SUBMISSIONS = 10;
+
+  // Path for your folder where images are downloaded
+  private static final String IMG_DIRECTORY = "C:\\Users\\justa\\IdeaProjects\\TwitterBot\\src\\img";
+
+  // Path for your txt file where post history is written to
+  private static final String GRAVEYARD = "C:\\Users\\justa\\IdeaProjects\\TwitterBot\\src\\graveyard.txt";
+
+  // Put how long
+
+  // Place info for Reddit authentication
+  private static final String USERNAME = "TheItalipino";
+  private static final String PASSWORD = "Reba321!";
+  private static final String AGENT_ID = "skSYmiLn2tfQ5A";
+  private static final String TOKEN_SECRET = "Fe8DtvU-A4p-N3SFMX3WouMjdkY";
+
+  public static void main(String[] args) throws TwitterException, OAuthException, InterruptedException, IOException {
     while(true) {
+
+      // Connect to Twitter and Reddit
+      Twitter twitter = connectTwitter();
+      RedditClient redditClient = connectReddit();
+
       // Run through both subreddits before taking a nap
       for (String aSUBREDDITS_TO_MONITOR : SUBREDDITS_TO_MONITOR) {
-        Twitter twitter = connectTwitter();
-        RedditClient redditClient = connectReddit();
 
         // Get Listing of Hot posts from Subreddit
         SubredditPaginator sp = new SubredditPaginator(redditClient, aSUBREDDITS_TO_MONITOR);
@@ -48,18 +69,22 @@ public class TwitterBot {
           if (postHasNotBeenPosted(list.get(i))) {
             System.out.println("[bot] ...Post found");
             String imgPath = getImage(list.get(i).getUrl());
-            String tweet = list.get(i).getTitle();
-            File image = new File(imgPath);
 
-            // Tweet with media
-            System.out.println("[bot] Tweeting: " + tweet + " with image " + imgPath);
-            StatusUpdate status = new StatusUpdate(tweet);
-            status.setMedia(image);
-            twitter.updateStatus(status);
+            // Check if post contains image
+            if(imgPath != null) {
+              String tweet = list.get(i).getTitle();
+              File image = new File(imgPath);
 
-            // Wait one minute before tweeting again
-            System.out.println("[bot] Sleeping for 30 seconds");
-            Thread.sleep(30000);
+              // Tweet with media
+              System.out.println("[bot] Tweeting: " + tweet + " with image " + imgPath);
+              StatusUpdate status = new StatusUpdate(tweet);
+              status.setMedia(image);
+              twitter.updateStatus(status);
+
+              // Wait 30 seconds before tweeting again
+              System.out.println("[bot] Sleeping for 30 seconds");
+              Thread.sleep(30000);
+            }
           }
         }
       }
@@ -76,11 +101,12 @@ public class TwitterBot {
     return twitter;
   }
   // Connects to Reddit API
-  private static RedditClient connectReddit() throws OAuthException {
+  private static RedditClient connectReddit() throws OAuthException, IOException {
+
     System.out.println("[bot] Connecting to Reddit...");
-    UserAgent myUserAgent = UserAgent.of("desktop", "bot", "v0.1", "username");
+    UserAgent myUserAgent = UserAgent.of("desktop", "bot", "v0.1", "TheItalipino");
     RedditClient redditClient = new RedditClient(myUserAgent);
-    Credentials credentials = Credentials.script("username", "password", "token", "secret");
+    Credentials credentials = Credentials.script(USERNAME, PASSWORD, AGENT_ID, TOKEN_SECRET);
     OAuthData authData = redditClient.getOAuthHelper().easyAuth(credentials);
     redditClient.authenticate(authData);
     System.out.println("[bot] ...Successfully connected to Reddit");
