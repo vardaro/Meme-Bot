@@ -39,10 +39,10 @@ public class TwitterBot {
   private static final String GRAVEYARD = "C:\\Users\\justa\\IdeaProjects\\TwitterBot\\src\\graveyard.txt";
 
   // Place info for Reddit authentication
-  private static final String USERNAME = "TheItalipino";
-  private static final String PASSWORD = "Reba321!";
-  private static final String AGENT_ID = "skSYmiLn2tfQ5A";
-  private static final String TOKEN_SECRET = "Fe8DtvU-A4p-N3SFMX3WouMjdkY";
+  private static final String USERNAME = "";
+  private static final String PASSWORD = "";
+  private static final String AGENT_ID = "";
+  private static final String TOKEN_SECRET = "";
 
   public static void main(String[] args) throws TwitterException, OAuthException, InterruptedException, IOException {
     while(true) {
