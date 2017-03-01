@@ -79,9 +79,9 @@ public class TwitterBot {
   // Connects to Reddit API
   private static RedditClient connectReddit() throws OAuthException {
     System.out.println("[bot] Connecting to Reddit...");
-    UserAgent myUserAgent = UserAgent.of("desktop", "bot", "v0.1", "username");
+    UserAgent myUserAgent = UserAgent.of("desktop", "bot", "v0.1", "");
     RedditClient redditClient = new RedditClient(myUserAgent);
-    Credentials credentials = Credentials.script("TheItalipino", "Reba321!", "skSYmiLn2tfQ5A", "Fe8DtvU-A4p-N3SFMX3WouMjdkY");
+    Credentials credentials = Credentials.script("", "", "", "");
     OAuthData authData = redditClient.getOAuthHelper().easyAuth(credentials);
     redditClient.authenticate(authData);
     System.out.println("[bot] ...Successfully connected to Reddit");
