@@ -38,8 +38,6 @@ public class TwitterBot {
   // Path for your txt file where post history is written to
   private static final String GRAVEYARD = "C:\\Users\\justa\\IdeaProjects\\TwitterBot\\src\\graveyard.txt";
 
-  // Put how long
-
   // Place info for Reddit authentication
   private static final String USERNAME = "TheItalipino";
   private static final String PASSWORD = "Reba321!";
