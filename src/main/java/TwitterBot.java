@@ -14,6 +14,7 @@ import net.dean.jraw.models.Submission;
 import net.dean.jraw.paginators.Sorting;
 import net.dean.jraw.paginators.SubredditPaginator;
 
+import org.apache.log4j.BasicConfigurator;
 import twitter4j.StatusUpdate;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
@@ -26,8 +27,8 @@ import java.util.Scanner;
 public class TwitterBot {
   private static final String[] SUBREDDITS_TO_MONITOR = {"me_irl", "WholesomeMemes"};
   private static final int LIMIT_OF_SUBMISSIONS = 25;
-  private static final String IMG_DIRECTORY = "\\TwitterBot\\src\\img";
-  private static final String GRAVEYARD = "\\TwitterBot\\src\\graveyard.txt";
+  private static final String IMG_DIRECTORY = "C:\\Users\\justa\\myBot\\RedditTwitterBot\\src\\img";
+  private static final String GRAVEYARD = "C:\\Users\\justa\\myBot\\RedditTwitterBot\\src\\graveyard.txt";
   public static void main(String[] args) throws TwitterException, OAuthException, InterruptedException {
     while(true) {
       // Run through both subreddits before taking a nap
@@ -80,7 +81,7 @@ public class TwitterBot {
     System.out.println("[bot] Connecting to Reddit...");
     UserAgent myUserAgent = UserAgent.of("desktop", "bot", "v0.1", "username");
     RedditClient redditClient = new RedditClient(myUserAgent);
-    Credentials credentials = Credentials.script("username", "password", "token", "secret");
+    Credentials credentials = Credentials.script("TheItalipino", "Reba321!", "skSYmiLn2tfQ5A", "Fe8DtvU-A4p-N3SFMX3WouMjdkY");
     OAuthData authData = redditClient.getOAuthHelper().easyAuth(credentials);
     redditClient.authenticate(authData);
     System.out.println("[bot] ...Successfully connected to Reddit");
