@@ -26,11 +26,14 @@ import java.util.Scanner;
 
 public class TwitterBot {
 
+  // Counts printlns
+  private static int line = 1;
+
   // List subreddits you want to check
-  private static final String[] SUBREDDITS_TO_MONITOR = {"WholesomeMemes", "me_irl"};
+  private static final String[] SUBREDDITS_TO_MONITOR = {"CringeAnarchy", "justneckbeardthings", "WholesomeMemes", "me_irl"};
 
   // How many posts to search for
-  private static final int LIMIT_OF_SUBMISSIONS = 10;
+  private static final int LIMIT_OF_SUBMISSIONS = 1;
 
   // Path for your folder where images are downloaded
   private static final String IMG_DIRECTORY = "C:\\Users\\justa\\IdeaProjects\\TwitterBot\\src\\img";
@@ -46,7 +49,6 @@ public class TwitterBot {
 
   public static void main(String[] args) throws TwitterException, OAuthException, InterruptedException, IOException {
     while(true) {
-
       // Connect to Twitter and Reddit
       Twitter twitter = connectTwitter();
       RedditClient redditClient = connectReddit();
@@ -54,18 +56,22 @@ public class TwitterBot {
       // Run through both subreddits before taking a nap
       for (String aSUBREDDITS_TO_MONITOR : SUBREDDITS_TO_MONITOR) {
 
-        // Get Listing of Hot posts from Subreddit
-        SubredditPaginator sp = new SubredditPaginator(redditClient, aSUBREDDITS_TO_MONITOR);
-        sp.setLimit(LIMIT_OF_SUBMISSIONS);
-        sp.setSorting(Sorting.HOT);
-        sp.next(true);
-        Listing<Submission> list = sp.getCurrentListing();
+       int submissionCount = LIMIT_OF_SUBMISSIONS;
 
         // Check each post and determine if it can be tweeted
-        for (int i = 0; i < LIMIT_OF_SUBMISSIONS; i++) {
-          System.out.println("[bot] Finding a post...");
-          if (postHasNotBeenPosted(list.get(i))) {
-            System.out.println("[bot] ...Post found");
+        for (int i = 0; i < submissionCount; i++) {
+          // Get Listing of Hot posts from Subreddit
+          System.out.println(line++ +" [bot] Checking sub: r/" + aSUBREDDITS_TO_MONITOR);
+          SubredditPaginator sp = new SubredditPaginator(redditClient, aSUBREDDITS_TO_MONITOR);
+          sp.setLimit(submissionCount);
+          sp.setSorting(Sorting.HOT);
+          sp.next(true);
+          Listing<Submission> list = sp.getCurrentListing();
+          System.out.println(line++);
+          System.out.println(line++ +" [bot] Tweet Attempt #" + (i+1) );
+          if (postHasNotBeenPosted(list.get(i)) && isUnder140(list.get(i))) {
+            // Download the image
+            System.out.println(line++ +" [bot] Post found");
             String imgPath = getImage(list.get(i).getUrl());
 
             // Check if post contains image
@@ -74,46 +80,54 @@ public class TwitterBot {
               File image = new File(imgPath);
 
               // Tweet with media
-              System.out.println("[bot] Tweeting: " + tweet + " with image " + imgPath);
+              System.out.println(line++);
+              System.out.println(line++ +" [bot] Tweeting from r/" +aSUBREDDITS_TO_MONITOR +": " + tweet + " with image " + imgPath);
+              System.out.println(line++);
               StatusUpdate status = new StatusUpdate(tweet);
               status.setMedia(image);
               twitter.updateStatus(status);
-
-              // Wait 30 seconds before tweeting again
-              System.out.println("[bot] Sleeping for 30 seconds");
-              Thread.sleep(30000);
+            } else {
+              // Lengthen the for loop until we find a match
+              System.out.println(line++);
+              System.out.println(line++ +" [bot] Post doesn't contain an image. Looking for another post.");
+              System.out.println(line++);
+              sp.setLimit(submissionCount++);
             }
+          } else {
+            // Lengthen the For loop until we find a match
+            System.out.println(line++ +" [bot] Post was found but has already been tweeted. Looking for another post.");
+            sp.setLimit(submissionCount++);
           }
         }
       }
-      System.out.println("[bot] Sleeping for 12 hours");
-      Thread.sleep(1000 * 60 * 60 * 12);
+      // Take ten minutes rest before pinging Reddit again
+      System.out.println(line++ +" [bot] Sleeping for 10 minutes");
+      Thread.sleep(1000 * 60 * 10);
     }
   }
 
   // Connects to Twitter API
   private static Twitter connectTwitter() {
-    System.out.println("[bot] Connecting to Twitter...");
+    System.out.println(line++ +" [bot] Connecting to Twitter");
     Twitter twitter = new TwitterFactory().getSingleton();
-    System.out.println("[bot] ...Successfully connected to Twitter");
+    System.out.println(line++ +" [bot] Successfully connected to Twitter");
     return twitter;
   }
   // Connects to Reddit API
   private static RedditClient connectReddit() throws OAuthException, IOException {
-
-    System.out.println("[bot] Connecting to Reddit...");
+    System.out.println(line++ +" [bot] Connecting to Reddit");
     UserAgent myUserAgent = UserAgent.of("desktop", "bot", "v0.1", "TheItalipino");
     RedditClient redditClient = new RedditClient(myUserAgent);
     Credentials credentials = Credentials.script(USERNAME, PASSWORD, AGENT_ID, TOKEN_SECRET);
     OAuthData authData = redditClient.getOAuthHelper().easyAuth(credentials);
     redditClient.authenticate(authData);
-    System.out.println("[bot] ...Successfully connected to Reddit");
+    System.out.println(line++ +" [bot] Successfully connected to Reddit");
     return redditClient;
   }
 
   private static String getImage(String link) {
     // Check if the link has an image
-    if(link.contains("i.reddituploads.com") || link.contains("imgur.com") || link.contains("i.redd.it")) {
+    if(link.contains("i.reddituploads.com") || link.contains("i.imgur.com") || link.contains("i.redd.it")) {
       // Method downloads each image to the 'img' directory
       String filePath = null;
       String fileName;
@@ -129,7 +143,7 @@ public class TwitterBot {
         // This is so ugly, there is probably a better way to remove all the illegal chars from a string
         fileName = link.substring(link.lastIndexOf("/")).replaceAll(extension, "").replace('?','r');
         filePath = IMG_DIRECTORY + fileName + extension;
-        System.out.println("[bot] Downloading " + extension + " image at " + link + " as " + filePath);
+        System.out.println(line++ +" [bot] Downloading " + extension + " image at " + link + " as " + filePath);
 
         // Download image to 'img' directory
         // Credit to http://www.technicalkeeda.com/java-tutorials/ for code that downloads image to directory
@@ -147,11 +161,11 @@ public class TwitterBot {
       return filePath;
     }
     // If we couldn't find and image return null
-    System.out.println("[bot] No image found");
+    System.out.println(line++ +" [bot] No image found");
     return null;
   }
 
-  // Every post on Reddit contains a unique post ID.
+  // Every post on Reddit contains a unique alphanumeric post ID
   // This method determines the post ID and checks if it has been posted before.
   // If it has not been posted before, write the ID to the .txt file to prevent duplicate tweets
   private static boolean postHasNotBeenPosted(Submission s) {
@@ -164,17 +178,17 @@ public class TwitterBot {
     try {
       Scanner scanner = new Scanner(graveyard);
       while(scanner.hasNextLine()) {
-        String line = scanner.nextLine();
-        if(line.equals(subPostID)) {
+        String inline = scanner.nextLine();
+        if(inline.equals(subPostID)) {
           // Match found, skip this post
-          System.out.println("[bot] This post (" + subPostID + ") has already been posted!");
+          System.out.println(line++ +" [bot] This post (" + subPostID + ") has already been posted!");
           return false;
         }
       }
     }catch (FileNotFoundException e) {
       e.printStackTrace();
     }
-    // subPostID was not found in file, append to graveyard.txt
+    // subPostID was not found in file, append to graveyard.txt to prevent future duplicate tweets
     try {
       out = new PrintWriter(new BufferedWriter(new FileWriter(GRAVEYARD, true)));
       out.println(subPostID);
@@ -188,5 +202,9 @@ public class TwitterBot {
       }
     }
     return true;
+  }
+  // Determines whether Submission title is less than 140 characters
+  private static boolean isUnder140(Submission s) {
+    return s.getTitle().length() <= 140;
   }
 }
