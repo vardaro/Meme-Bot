@@ -135,7 +135,6 @@ public class TwitterBot {
       botSay("*hacker voice* im in ");
       return redditClient;
   }
-
   private static String getImage(String link) {
     // Check if the link has an image
     if (link.contains("i.reddituploads.com") || link.contains("i.imgur.com") || link.contains("i.redd.it") && !link.contains("gif")) {
