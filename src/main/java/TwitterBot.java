@@ -26,7 +26,7 @@ import java.util.Scanner;
 
 public class TwitterBot {
   // List subreddits you want to check. Put as many as you like :)
-  private static final String[] SUBREDDITS_TO_MONITOR = {"me_irl", "WholesomeMemes", "me_irl", "fakehistoryporn", "MemeEconomy","ShittyProgramming"};
+  private static final String[] SUBREDDITS_TO_MONITOR = {"me_irl", "WholesomeMemes", "me_irl", "fakehistoryporn", "MemeEconomy"};
   // How many posts to search for
   private static final int LIMIT_OF_SUBMISSIONS = 1;
   // Path for your folder where images are downloaded
