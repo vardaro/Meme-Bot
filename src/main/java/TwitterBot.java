@@ -30,14 +30,14 @@ public class TwitterBot {
   // How many posts to search for
   private static final int LIMIT_OF_SUBMISSIONS = 1;
   // Path for your folder where images are downloaded
-  private static final String IMG_DIRECTORY = "C:\\Users\\justa\\IdeaProjects\\TwitterBot\\src\\img";
+  private static final String IMG_DIRECTORY = "";
   // Path for your txt file where post history is written to
-  private static final String GRAVEYARD = "C:\\Users\\justa\\IdeaProjects\\TwitterBot\\src\\graveyard.txt";
+  private static final String GRAVEYARD = "";
   // Place info for Reddit authentication
-  private static final String USERNAME = "TheItalipino";
-  private static final String PASSWORD = "Reba321!";
-  private static final String AGENT_ID = "skSYmiLn2tfQ5A";
-  private static final String TOKEN_SECRET = "Fe8DtvU-A4p-N3SFMX3WouMjdkY";
+  private static final String USERNAME = "";
+  private static final String PASSWORD = "";
+  private static final String AGENT_ID = "";
+  private static final String TOKEN_SECRET = "";
   // Counts printlns
   private static int line = 1;
 
