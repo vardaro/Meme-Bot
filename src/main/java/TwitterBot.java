@@ -1,3 +1,10 @@
+/*
+Created by Anthony Vardaro on 2/17/17
+
+This program looks for popular posts on the specified subreddits
+and tweets them out on twitter
+ */
+
 import net.dean.jraw.RedditClient;
 import net.dean.jraw.http.UserAgent;
 import net.dean.jraw.http.oauth.Credentials;
