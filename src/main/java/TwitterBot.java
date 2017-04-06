@@ -1,10 +1,3 @@
-/**
- * Created by Anthony on 2/17/2017
- * <p>
- * Hello, this is a program I wrote using JRAW and Twitter4j that mirrors Hot posts from my favorite subreddits and tweets them on its
- * bot account @freshpepperonis
- */
-
 import net.dean.jraw.RedditClient;
 import net.dean.jraw.http.UserAgent;
 import net.dean.jraw.http.oauth.Credentials;
@@ -14,7 +7,6 @@ import net.dean.jraw.models.Listing;
 import net.dean.jraw.models.Submission;
 import net.dean.jraw.paginators.Sorting;
 import net.dean.jraw.paginators.SubredditPaginator;
-
 import twitter4j.StatusUpdate;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
@@ -22,28 +14,35 @@ import twitter4j.TwitterFactory;
 
 import java.io.*;
 import java.net.URL;
+import java.util.Properties;
 import java.util.Scanner;
 
 public class TwitterBot {
   // List subreddits you want to check. Put as many as you like :)
-  private static final String[] SUBREDDITS_TO_MONITOR = {"me_irl", "WholesomeMemes", "me_irl", "fakehistoryporn", "MemeEconomy"};
+  private static final String[] SUBREDDITS_TO_MONITOR = {"me_irl", "WholesomeMemes", "me_irl", "fakehistoryporn"};
+
   // How many posts to search for
   private static final int LIMIT_OF_SUBMISSIONS = 1;
+
+  // Put the name of you properties file here.
+  private static final GetProperties prop = new GetProperties("BotInfo.properties");
+
   // Path for your folder where images are downloaded
-  private static final String IMG_DIRECTORY = "C:\\Users\\justa\\IdeaProjects\\TwitterBot\\src\\img";
+  private static final String IMG_DIRECTORY = prop.get("IMG_DIRECTORY");
+
   // Path for your txt file where post history is written to
-  private static final String GRAVEYARD = "C:\\Users\\justa\\IdeaProjects\\TwitterBot\\src\\graveyard.txt";
+  private static final String MemeCemetary = prop.get("MemeCemetary");
+
   // Place info for Reddit authentication
-  private static final String USERNAME = "TheItalipino";
-  private static final String PASSWORD = "Reba321!";
-  private static final String AGENT_ID = "skSYmiLn2tfQ5A";
-  private static final String TOKEN_SECRET = "Fe8DtvU-A4p-N3SFMX3WouMjdkY";
+  private static final String USERNAME = prop.get("USERNAME");
+  private static final String PASSWORD = prop.get("PASSWORD");
+  private static final String AGENT_ID = prop.get("AGENT_ID");
+  private static final String TOKEN_SECRET = prop.get("TOKEN_SECRET");
+
   // Counts printlns
   private static int line = 1;
 
-  public static void main(String[] args) throws TwitterException, OAuthException, InterruptedException, IOException {
-
-    while (true) {
+  public static void main(String[] args) throws InterruptedException, IOException {
       // Connect to Twitter and Reddit
       Twitter twitter = connectTwitter();
       RedditClient redditClient = connectReddit();
@@ -53,41 +52,59 @@ public class TwitterBot {
 
         int submissionCount = LIMIT_OF_SUBMISSIONS;
         botSay("----------------------------------------------------------------Checking sub: r/" + aSUBREDDITS_TO_MONITOR + "----------------------------------------------------------------");
+
         // Check each post and determine if it can be tweeted
         for (int i = 0; i < submissionCount; i++) {
+
           // Get Listing of Hot posts from Subreddit
           SubredditPaginator sp = new SubredditPaginator(redditClient, aSUBREDDITS_TO_MONITOR);
-          int tweetAttempt = i+1;
+          int tweetAttempt = i + 1;
           sp.setLimit(submissionCount);
           sp.setSorting(Sorting.HOT);
           sp.next(true);
           Listing<Submission> list = sp.getCurrentListing();
           botSay("");
           botSay("r/" + aSUBREDDITS_TO_MONITOR + " Tweet Attempt #" + (tweetAttempt));
+          Submission s = list.get(i);
 
           // 100 is the limit for post listing you can get from Reddit API
-          if(tweetAttempt != 100) {
-            if (postHasNotBeenPosted(list.get(i)) && isUnder140(list.get(i))) {
+          if (tweetAttempt != 100) {
+            if (postHasNotBeenPosted(s) && isUnder140(s)) {
+
               // Download the image
               botSay("Post found");
-              String imgPath = getImage(list.get(i).getUrl());
+              String imgPath = getImage(s.getUrl());
 
               // Check if post contains image
               if (imgPath != null) {
-                String tweet = list.get(i).getTitle();
+                String tweet = s.getTitle();
                 File image = new File(imgPath);
-
                 // Tweet with media
                 botSay("");
-                botSay(line++ + " [bot] Tweeting from r/" + aSUBREDDITS_TO_MONITOR + ": " + tweet + " with image " + imgPath);
+                botSay("Tweeting from r/" + aSUBREDDITS_TO_MONITOR + ": " + tweet + " with image " + imgPath);
                 botSay("");
                 StatusUpdate status = new StatusUpdate(tweet);
                 status.setMedia(image);
-                twitter.updateStatus(status);
+                try {
+                  // Tweet
+                  twitter.updateStatus(status);
 
-                // Take a well-deserved nap
-                /*botSay((line++ + " [bot] Sleeping or 30 minutes");
-                Thread.sleep(1000*10*60*3);*/
+                  // Save record to file
+                  record(s);
+
+                }
+                // Most commonly a TwitterException is thrown due to update limits
+                // The program waits fifteen minutes (Twitter Rate Limit timeframe)
+                // and reruns. Since the post was never recorded it'll find the same
+                // tweet and try again.
+                catch (TwitterException te) {
+                  if (te.exceededRateLimitation()) {
+                    // Waits fifteen minutes to check for rate limits and tries again
+                    botSay("Exceeded Twitter API Rate Limitation! Resting for 15 minutes");
+                    Thread.sleep(60000 * 15);
+                    botSay("Trying post again");
+                  }
+                }
               } else {
                 // Lengthen the for loop until we find a match
                 botSay("");
@@ -102,29 +119,30 @@ public class TwitterBot {
             }
           } else {
             botSay("");
-            botSay("Reached max post listing of 100 posts.\n"+ line++ + " [bot] Skipping subreddit: r/" + aSUBREDDITS_TO_MONITOR);
-
+            botSay("Reached max post listing of 100 posts.");
+            botSay("Skipping subreddit: r/" + aSUBREDDITS_TO_MONITOR);
           }
         }
       }
       // Take ten minutes rest before pinging Reddit again
-      botSay("Sleeping for 2 hours");
-      Thread.sleep(12*(1000 * 60 * 10));
-
+      botSay("Sleeping for 6 hours");
+      Thread.sleep(60000 * 60 * 6);
+      // Run again
+      Thread.currentThread().join();
     }
 
-  }
 
   // Connects to Twitter API
   private static Twitter connectTwitter() {
-      botSay("Connecting to Twitter");
-      Twitter twitter = new TwitterFactory().getSingleton();
-      botSay("Successfully connected to Twitter");
-      return twitter;
+    botSay("Connecting to Twitter");
+    Twitter twitter = new TwitterFactory().getSingleton();
+    botSay("Successfully connected to Twitter");
+    return twitter;
   }
 
   // Connects to Reddit API
-  private static RedditClient connectReddit() throws OAuthException, IOException {
+  private static RedditClient connectReddit() {
+    try {
       botSay("Connecting to Reddit");
       UserAgent myUserAgent = UserAgent.of("desktop", "bot", "v0.1", "TheItalipino");
       RedditClient redditClient = new RedditClient(myUserAgent);
@@ -134,7 +152,20 @@ public class TwitterBot {
       botSay("Successfully connected to Reddit");
       botSay("*hacker voice* im in ");
       return redditClient;
+
+    } catch (OAuthException oae) {
+      // If the user puts wrong credentials
+      botSay("Invalid Reddit API credentials :(");
+      return null;
+
+    } catch (RuntimeException o) {
+      // If there is no connecting it'll keep trying until it can connect
+      botSay("Error connecting to Reddit");
+      botSay("Trying again...");
+      return connectReddit();
+    }
   }
+
   private static String getImage(String link) {
     // Check if the link has an image
     if (link.contains("i.reddituploads.com") || link.contains("i.imgur.com") || link.contains("i.redd.it") && !link.contains("gif")) {
@@ -156,7 +187,6 @@ public class TwitterBot {
         botSay("Downloading " + extension + " image at " + link + " as " + filePath);
 
         // Download image to 'img' directory
-        // Credit to http://www.technicalkeeda.com/java-tutorials/ for code that downloads image to directory
         URL url = new URL(link);
         InputStream inputStream = url.openStream();
         OutputStream outputStream = new FileOutputStream(filePath);
@@ -178,11 +208,11 @@ public class TwitterBot {
   // Every post on Reddit contains a unique alphanumeric post ID
   // This method determines the post ID and checks if it has been posted before.
   // If it has not been posted before, write the ID to the .txt file to prevent duplicate tweets
-  private static boolean postHasNotBeenPosted(Submission s) {
-    File graveyard = new File(GRAVEYARD);
-    PrintWriter out = null;
+  private static boolean postHasNotBeenPosted(Submission s) throws IOException {
+    File graveyard = new File(MemeCemetary);
     // Unique ID written to txt file
-    String subPostID = "r" + s.getId();
+
+    String subPostID = getSubPostID(s);
 
     // Check every line of the txt file to find a match
     try {
@@ -195,23 +225,35 @@ public class TwitterBot {
           return false;
         }
       }
+      // If the file is not found we create the file
     } catch (FileNotFoundException e) {
-      e.printStackTrace();
-    }
-    // subPostID was not found in file, append to graveyard.txt to prevent future duplicate tweets
-    try {
-      out = new PrintWriter(new BufferedWriter(new FileWriter(GRAVEYARD, true)));
-      out.println(subPostID);
-    } catch (IOException io) {
-      io.printStackTrace();
-    }
-    // Clean up
-    finally {
-      if (out != null) {
-        out.close();
+      botSay(MemeCemetary + " file is not found!");
+      botSay("Creating file...");
+
+      // File creation
+      File file = new File(MemeCemetary);
+      if (file.createNewFile()) {
+        botSay("File is successfully created!");
+        botSay("Retrying post ID" + subPostID);
+
+        // Should always return false since its a new file with nothing written
+        return postHasNotBeenPosted(s);
       }
     }
     return true;
+  }
+
+  // Writes the post ID to the graveyard
+  // This method only get called after a post has been tweeted
+  private static void record(Submission s) throws IOException {
+    String subPostID = getSubPostID(s);
+
+    // Write subPostID
+    PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(MemeCemetary, true)));
+    out.println(subPostID);
+
+    // Clean up when done
+    out.close();
   }
 
   // Determines whether Submission title is less than 140 characters
@@ -219,7 +261,37 @@ public class TwitterBot {
     return s.getTitle().length() <= 140;
   }
 
+  // Returns unique post ID written to file
+  private static String getSubPostID(Submission s) {
+    return "r" + s.getId();
+  }
+
+  // Prints to the console with line count and " [bot] "
   private static void botSay(String sout) {
     System.out.println(line++ + " [bot] " + sout);
+  }
+}
+
+// This class reads in the specified properties file
+class GetProperties {
+  Properties properties = new Properties();
+  // Path for properties file
+  private String propPath;
+
+  // Assign specified properties file name to "propPath"
+  public GetProperties(String propertiesPath) {
+    this.propPath = propertiesPath;
+  }
+
+  // Returns requested property from file
+  public String get(String val) {
+    try {
+      InputStream input = getClass().getClassLoader().getResourceAsStream(propPath);
+      properties.load(input);
+      return properties.getProperty(val);
+    } catch (IOException io) {
+      System.out.println("Error getting property\nException: " + io);
+      return null;
+    }
   }
 }
