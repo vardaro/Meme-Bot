@@ -1,10 +1,3 @@
-/*
-Created by Anthony Vardaro on 2/17/17
-
-This program looks for popular posts on the specified subreddits
-and tweets them out on twitter
- */
-
 import net.dean.jraw.RedditClient;
 import net.dean.jraw.http.UserAgent;
 import net.dean.jraw.http.oauth.Credentials;
@@ -26,7 +19,7 @@ import java.util.Scanner;
 
 public class TwitterBot {
   // List subreddits you want to check. Put as many as you like :)
-  private static final String[] SUBREDDITS_TO_MONITOR = {"me_irl", "WholesomeMemes", "me_irl", "fakehistoryporn"};
+  private static final String[] SUBREDDITS_TO_MONITOR = {"me_irl", "WholesomeMemes", "me_irl", "fakehistoryporn", "hmmm"};
 
   // How many posts to search for
   private static final int LIMIT_OF_SUBMISSIONS = 1;
@@ -50,10 +43,10 @@ public class TwitterBot {
   private static int line = 1;
 
   public static void main(String[] args) throws InterruptedException, IOException {
-      // Connect to Twitter and Reddit
-      Twitter twitter = connectTwitter();
-      RedditClient redditClient = connectReddit();
-
+    // Connect to Twitter and Reddit
+    Twitter twitter = connectTwitter();
+    RedditClient redditClient = connectReddit();
+    while (true) {
       // Run through both subreddits before taking a nap
       for (String aSUBREDDITS_TO_MONITOR : SUBREDDITS_TO_MONITOR) {
 
@@ -132,14 +125,16 @@ public class TwitterBot {
         }
       }
       // Take ten minutes rest before pinging Reddit again
-      botSay("Sleeping for 6 hours");
-      Thread.sleep(60000 * 60 * 6);
-      // Run again
-      Thread.currentThread().join();
+      botSay("Sleeping for an hour");
+      Thread.sleep(60000 * 60);
     }
+  }
 
-
-  // Connects to Twitter API
+  /**
+   * Gets Twitter API keys from twitter4j.properties
+   *
+   * @return Twitter object
+   */
   private static Twitter connectTwitter() {
     botSay("Connecting to Twitter");
     Twitter twitter = new TwitterFactory().getSingleton();
@@ -147,7 +142,12 @@ public class TwitterBot {
     return twitter;
   }
 
-  // Connects to Reddit API
+  /**
+   * Reads in properties for Reddit API and
+   * determines whether the info is valid
+   *
+   * @return RedditClient object
+   */
   private static RedditClient connectReddit() {
     try {
       botSay("Connecting to Reddit");
@@ -173,6 +173,23 @@ public class TwitterBot {
     }
   }
 
+  /**
+   * Downloads reddit image to 'img' directory.
+   * <p>
+   * Checks if link to reddit post is an image and not a gif.
+   * <p>
+   * i.reddituploads.com image link replace '&' with '&amp;' so the method corrects this,
+   * otherwise the link will be invalid.
+   * <p>
+   * Cleans up the link to create the file name in the 'img' directory
+   * <p>
+   * Determines file path using fileName and extension of image
+   * <p>
+   * Downloads the image to the directory.
+   *
+   * @param link Link to the reddit post
+   * @return String containing the file path of the image downloaded
+   */
   private static String getImage(String link) {
     // Check if the link has an image
     if (link.contains("i.reddituploads.com") || link.contains("i.imgur.com") || link.contains("i.redd.it") && !link.contains("gif")) {
@@ -212,9 +229,21 @@ public class TwitterBot {
     return null;
   }
 
-  // Every post on Reddit contains a unique alphanumeric post ID
-  // This method determines the post ID and checks if it has been posted before.
-  // If it has not been posted before, write the ID to the .txt file to prevent duplicate tweets
+  /**
+   * This method determines whether or not the reddit post has already been tweeted by the bot
+   * <p>
+   * Every post on Reddit is assigned a unique alphanumeric post ID,
+   * this method will check the 'MemeCemetary.txt' for whether the post ID
+   * has already been written to it.
+   * <p>
+   * If the program notices that the file does not exist,
+   * it will create the method and look again. The newly
+   * created file will be blank so it will return true
+   *
+   * @param s Submission object of reddit post
+   * @return true if it doesnt not find the post ID in the file, false otherwise
+   *
+   */
   private static boolean postHasNotBeenPosted(Submission s) throws IOException {
     File graveyard = new File(MemeCemetary);
     // Unique ID written to txt file
@@ -250,8 +279,14 @@ public class TwitterBot {
     return true;
   }
 
-  // Writes the post ID to the graveyard
-  // This method only get called after a post has been tweeted
+  /**
+   * After a reddit post has been tweeted, this method will
+   * be called to to record the post ID to the 'MemeCemetary.txt'
+   * to prevent duplicate tweets.
+   *
+   * @param s Submission object of reddit post
+   *
+   */
   private static void record(Submission s) throws IOException {
     String subPostID = getSubPostID(s);
 
@@ -263,34 +298,65 @@ public class TwitterBot {
     out.close();
   }
 
-  // Determines whether Submission title is less than 140 characters
+  /**
+   * Determines if the reddit post title contains fewer than 140 characters
+   *
+   * @param s Submission object of reddit post
+   * @return true if the title is less than 140 characters
+   */
   private static boolean isUnder140(Submission s) {
     return s.getTitle().length() <= 140;
   }
 
-  // Returns unique post ID written to file
+  /**
+   * Returns unique ID of reddit Post written to 'MemeCemetary.txt'
+   *
+   * @param s Submission object of reddit post
+   * @return Submission ID
+   */
   private static String getSubPostID(Submission s) {
     return "r" + s.getId();
   }
 
-  // Prints to the console with line count and " [bot] "
+  /**
+   * I got tired of writing "line++ + " [bot] " + "..." "
+   * every time i wanted the bot to print to the console
+   * but I also really like the way it looks
+   * so I call this method instead.
+   *
+   * @param sout String printed to console
+   */
   private static void botSay(String sout) {
     System.out.println(line++ + " [bot] " + sout);
   }
 }
 
-// This class reads in the specified properties file
+/**
+ * This class is for reading in the 'MemeCemetary.txt'
+ * for the reddit API keys and paths 'MemeCemetary.txt' file
+ * and 'img' directory.
+ */
 class GetProperties {
   Properties properties = new Properties();
   // Path for properties file
   private String propPath;
 
-  // Assign specified properties file name to "propPath"
+  /**
+   * Assigns properties file name to propPath String
+   *
+   * @param propertiesPath Name of the properties file
+   */
   public GetProperties(String propertiesPath) {
     this.propPath = propertiesPath;
   }
 
-  // Returns requested property from file
+  /**
+   * Loads the properties file and returns the
+   * of the requested key
+   *
+   * @param val key for value needed
+   * @return    value of key
+   */
   public String get(String val) {
     try {
       InputStream input = getClass().getClassLoader().getResourceAsStream(propPath);
