@@ -42,11 +42,24 @@ public class TwitterBot {
   // Counts printlns
   private static int line = 1;
 
-  public static void main(String[] args) throws InterruptedException, IOException {
-    // Connect to Twitter and Reddit
-    Twitter twitter = connectTwitter();
-    RedditClient redditClient = connectReddit();
+  // Put duration between tweets in milliseconds
+  private static int napTime = 1000 * 60 * 60 * 6;
+
+  public static void main(String[] args) {
     while (true) {
+      runBot();
+    }
+  }
+
+  /**
+   * Main method for bot.
+   * Tweets one post from each listed subreddit each hour
+   */
+  private static void runBot() {
+    try {
+      // Connect to Twitter and Reddit
+      Twitter twitter = connectTwitter();
+      RedditClient redditClient = connectReddit(USERNAME);
       // Run through both subreddits before taking a nap
       for (String aSUBREDDITS_TO_MONITOR : SUBREDDITS_TO_MONITOR) {
 
@@ -57,8 +70,8 @@ public class TwitterBot {
         for (int i = 0; i < submissionCount; i++) {
 
           // Get Listing of Hot posts from Subreddit
-          SubredditPaginator sp = new SubredditPaginator(redditClient, aSUBREDDITS_TO_MONITOR);
           int tweetAttempt = i + 1;
+          SubredditPaginator sp = new SubredditPaginator(redditClient, aSUBREDDITS_TO_MONITOR);
           sp.setLimit(submissionCount);
           sp.setSorting(Sorting.HOT);
           sp.next(true);
@@ -125,8 +138,11 @@ public class TwitterBot {
         }
       }
       // Take ten minutes rest before pinging Reddit again
-      botSay("Sleeping for an hour");
-      Thread.sleep(60000 * 60);
+      botSay("Sleeping for " + napTime + " milliseconds");
+      Thread.sleep(napTime);
+    } catch (InterruptedException ie) {
+      botSay("Error while sleeping");
+      ie.printStackTrace();
     }
   }
 
@@ -146,12 +162,13 @@ public class TwitterBot {
    * Reads in properties for Reddit API and
    * determines whether the info is valid
    *
+   * @param user String containing reddit username
    * @return RedditClient object
    */
-  private static RedditClient connectReddit() {
+  private static RedditClient connectReddit(String user) {
     try {
       botSay("Connecting to Reddit");
-      UserAgent myUserAgent = UserAgent.of("desktop", "bot", "v0.1", "TheItalipino");
+      UserAgent myUserAgent = UserAgent.of("desktop", "bot", "v0.1", user);
       RedditClient redditClient = new RedditClient(myUserAgent);
       Credentials credentials = Credentials.script(USERNAME, PASSWORD, AGENT_ID, TOKEN_SECRET);
       OAuthData authData = redditClient.getOAuthHelper().easyAuth(credentials);
@@ -169,7 +186,7 @@ public class TwitterBot {
       // If there is no connecting it'll keep trying until it can connect
       botSay("Error connecting to Reddit");
       botSay("Trying again...");
-      return connectReddit();
+      return connectReddit(user);
     }
   }
 
@@ -242,9 +259,8 @@ public class TwitterBot {
    *
    * @param s Submission object of reddit post
    * @return true if it doesnt not find the post ID in the file, false otherwise
-   *
    */
-  private static boolean postHasNotBeenPosted(Submission s) throws IOException {
+  private static boolean postHasNotBeenPosted(Submission s) {
     File graveyard = new File(MemeCemetary);
     // Unique ID written to txt file
 
@@ -268,12 +284,17 @@ public class TwitterBot {
 
       // File creation
       File file = new File(MemeCemetary);
-      if (file.createNewFile()) {
-        botSay("File is successfully created!");
-        botSay("Retrying post ID" + subPostID);
+      try {
+        if (file.createNewFile()) {
+          botSay("File is successfully created!");
+          botSay("Retrying post ID " + subPostID);
 
-        // Should always return false since its a new file with nothing written
-        return postHasNotBeenPosted(s);
+          // Should always return false since its a new file with nothing written
+          return postHasNotBeenPosted(s);
+        }
+      } catch (IOException e1) {
+        e1.printStackTrace();
+        return false;
       }
     }
     return true;
@@ -285,13 +306,19 @@ public class TwitterBot {
    * to prevent duplicate tweets.
    *
    * @param s Submission object of reddit post
-   *
    */
-  private static void record(Submission s) throws IOException {
+  private static void record(Submission s) {
     String subPostID = getSubPostID(s);
 
     // Write subPostID
-    PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(MemeCemetary, true)));
+    PrintWriter out = null;
+
+    try {
+      out = new PrintWriter(new BufferedWriter(new FileWriter(MemeCemetary, true)));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
     out.println(subPostID);
 
     // Clean up when done
@@ -312,7 +339,7 @@ public class TwitterBot {
    * Returns unique ID of reddit Post written to 'MemeCemetary.txt'
    *
    * @param s Submission object of reddit post
-   * @return Submission ID
+   * @return  Submission ID
    */
   private static String getSubPostID(Submission s) {
     return "r" + s.getId();
@@ -333,7 +360,8 @@ public class TwitterBot {
 
 /**
  * This class is for reading in the 'MemeCemetary.txt'
- * for the reddit API keys and paths 'MemeCemetary.txt' file
+ * for the reddit API keys along with the paths
+ * for the 'MemeCemetary.txt' file
  * and 'img' directory.
  */
 class GetProperties {
@@ -354,16 +382,16 @@ class GetProperties {
    * Loads the properties file and returns the
    * of the requested key
    *
-   * @param val key for value needed
+   * @param key key for value needed
    * @return    value of key
    */
-  public String get(String val) {
+  public String get(String key) {
     try {
       InputStream input = getClass().getClassLoader().getResourceAsStream(propPath);
       properties.load(input);
-      return properties.getProperty(val);
+      return properties.getProperty(key);
     } catch (IOException io) {
-      System.out.println("Error getting property\nException: " + io);
+      System.out.println("Error getting property " + key + "\nException: " + io);
       return null;
     }
   }
